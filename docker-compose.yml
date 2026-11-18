@@ -1,0 +1,13 @@
+services:
+  mtg-store-web:
+    build: .
+    container_name: mtg-store-web
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=sqlite:/app/data/store_inventory.db
+      - FALLBACK_USD_TO_CLP=950.0
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clasificador MTG — Inventario de Tienda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+  <!-- Barra Superior -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-500/20">
+          M
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white">Inventario Tienda MTG</h1>
+          <p class="text-xs text-slate-400">Registro en vivo del clasificador automático</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Estado de Conexión -->
+        <div id="sync-status" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">
+          <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="sync-text">En vivo</span>
+        </div>
+
+        <!-- Botón Actualizar Precios -->
+        <button
+          id="refresh-prices-btn"
+          onclick="refreshPrices()"
+          class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-white transition flex items-center gap-2 shadow-sm"
+        >
+          <span id="refresh-icon">↻</span>
+          <span id="refresh-label">Actualizar Precios</span>
+        </button>
+
+        <!-- Botón Reiniciar Base de Datos -->
+        <button
+          onclick="openResetModal()"
+          title="Vaciar inventario y comenzar desde cero"
+          class="px-3.5 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-600 border border-rose-800/80 text-sm font-medium text-rose-200 hover:text-white transition flex items-center gap-1.5"
+        >
+          <span>🗑</span>
+          <span class="hidden md:inline">Reiniciar BD</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Tarjetas de Resumen -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Cartas en Stock</p>
+        <p id="stat-total-qty" class="text-2xl font-bold text-white mt-1">0</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Ediciones Únicas</p>
+        <p id="stat-unique-cards" class="text-2xl font-bold text-white mt-1">0</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Valor Total (CLP)</p>
+        <p id="stat-total-clp" class="text-2xl font-bold text-emerald-400 mt-1">$0</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Valor Total (USD)</p>
+        <p id="stat-total-usd" class="text-2xl font-bold text-sky-400 mt-1">$0.00</p>
+      </div>
+    </section>
+
+    <!-- Controles de Búsqueda, Filtro y Orden -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+        <!-- Buscador -->
+        <div class="md:col-span-4">
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Buscar nombre (ES/EN), edición (ej. FDN), #..."
+            oninput="renderDashboard()"
+            class="w-full px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <!-- Filtro por Rareza -->
+        <div class="md:col-span-2">
+          <select
+            id="rarity-filter"
+            onchange="renderDashboard()"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">Todas las rarezas</option>
+            <option value="m">Mítica</option>
+            <option value="r">Rara</option>
+            <option value="u">Infrecuente</option>
+            <option value="c">Común</option>
+            <option value="p">Promo / Especial</option>
+          </select>
+        </div>
+
+        <!-- Filtro por Color -->
+        <div class="md:col-span-2">
+          <select
+            id="color-filter"
+            onchange="renderDashboard()"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">Todos los colores</option>
+            <option value="W">Blanco (W)</option>
+            <option value="U">Azul (U)</option>
+            <option value="B">Negro (B)</option>
+            <option value="R">Rojo (R)</option>
+            <option value="G">Verde (G)</option>
+            <option value="C">Incoloro</option>
+          </select>
+        </div>
+
+        <!-- Filtro por Bandeja -->
+        <div class="md:col-span-2">
+          <select
+            id="bin-filter"
+            onchange="renderDashboard()"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">Todas las bandejas</option>
+            <option value="1">Bandeja #1</option>
+            <option value="2">Bandeja #2</option>
+            <option value="3">Bandeja #3</option>
+            <option value="4">Bandeja #4</option>
+            <option value="5">Bandeja #5</option>
+            <option value="6">Bandeja #6</option>
+          </select>
+        </div>
+
+        <!-- Ordenar por -->
+        <div class="md:col-span-2">
+          <select
+            id="sort-select"
+            onchange="renderDashboard()"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="recent">Orden: Más recientes</option>
+            <option value="price_desc">Precio: Mayor → Menor</option>
+            <option value="price_asc">Precio: Menor → Mayor</option>
+            <option value="rarity_desc">Rareza: Mítica → Común</option>
+            <option value="rarity_asc">Rareza: Común → Mítica</option>
+            <option value="qty_desc">Stock: Mayor → Menor</option>
+            <option value="name_asc">Nombre: A → Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1 text-xs text-slate-400">
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            id="foil-only-checkbox"
+            type="checkbox"
+            onchange="renderDashboard()"
+            class="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span>Mostrar solo cartas Foil</span>
+        </label>
+        <span id="results-count">Mostrando 0 cartas</span>
+      </div>
+    </section>
+
+    <!-- Estado Vacío -->
+    <div id="empty-state" class="hidden text-center py-16 bg-slate-900/50 border border-dashed border-slate-800 rounded-xl">
+      <p class="text-slate-300 font-medium">No hay cartas que coincidan con los filtros</p>
+      <p class="text-sm text-slate-500 mt-1">Esperando escaneos desde el robot clasificador ROS2...</p>
+    </div>
+
+    <!-- Cuadrícula de Cartas -->
+    <section id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+    </section>
+
+  </main>
+
+  <!-- Ventana Emergente de Advertencia para Reiniciar BD -->
+  <div
+    id="reset-modal"
+    onclick="if (event.target === this) closeResetModal()"
+    class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-full bg-rose-500/15 border border-rose-500/40 flex items-center justify-center text-rose-400 text-lg shrink-0">
+          ⚠️
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">¿Reiniciar base de datos desde cero?</h2>
+          <p class="text-sm text-slate-300 mt-1.5 leading-relaxed">
+            Esta acción eliminará <span class="font-semibold text-rose-400">todas las cartas registradas</span> y el historial de escaneos del inventario. No se puede deshacer.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button
+          type="button"
+          onclick="closeResetModal()"
+          class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-200 transition"
+        >
+          Cancelar
+        </button>
+        <button
+          id="confirm-reset-btn"
+          type="button"
+          onclick="confirmResetDatabase()"
+          class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-sm font-semibold text-white transition"
+        >
+          Sí, borrar todo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

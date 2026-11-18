@@ -1,0 +1,50 @@
+/* Smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Foil card border & holographic badge shimmer */
+.foil-card {
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.14);
+}
+
+.foil-badge {
+  background: linear-gradient(
+    115deg,
+    #ec4899 0%,
+    #a855f7 30%,
+    #38bdf8 60%,
+    #34d399 85%,
+    #facc15 100%
+  );
+  background-size: 200% 200%;
+  animation: foilShimmer 4s ease infinite;
+}
+
+@keyframes foilShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Rarity pill colors */
+.rarity-m { background-color: #7c2d12; color: #fdba74; border: 1px solid #ea580c; }
+.rarity-r { background-color: #713f12; color: #fde047; border: 1px solid #ca8a04; }
+.rarity-u { background-color: #1e293b; color: #cbd5e1; border: 1px solid #64748b; }
+.rarity-c { background-color: #18181b; color: #a1a1aa; border: 1px solid #3f3f46; }
+.rarity-p,
+.rarity-s { background-color: #4c1d95; color: #ddd6fe; border: 1px solid #8b5cf6; }
+.rarity-t,
+.rarity-l { background-color: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }

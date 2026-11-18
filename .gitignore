@@ -21,8 +21,16 @@ target/
 
 # Compiled Rust build artifacts (OS-specific and huge)
 /target
+data/
 
 # Local SQLite databases (each teammate generates their own)
 *.db
 *.db-shm
 *.db-wal
+
+
+mtg-store-web/target/
+*.db
+*.db-shm
+*.db-wal
+.git/
