@@ -1,14 +1,14 @@
-# Stage 1: Compile the Rust binary
+# Etapa 1: Compilar el binario en Rust
 FROM rust:1-slim AS builder
 
 WORKDIR /usr/src/app
-COPY Cargo.toml Cargo.lock build.rs ./
+COPY Cargo.toml Cargo.lock build.rs* ./
 COPY migrations ./migrations
 COPY src ./src
 
 RUN cargo build --release
 
-# Stage 2: Minimal runtime image
+# Etapa 2: Imagen ligera de ejecución (~80 MB)
 FROM debian:bookworm-slim
 
 RUN apt-get update \
